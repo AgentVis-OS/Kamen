@@ -1,0 +1,6 @@
+build/
+dist/
+.cache/
+*.zip
+module/system/system_ext/priv-app/AIPhoneAssistant/*.apk
+module/system/system_ext/etc/permissions/*.xml

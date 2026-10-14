@@ -1,0 +1,6 @@
+id=kamen_aiphone
+name=Kamen - AI Phone Assistant
+version=v0.1.0
+versionCode=1
+author=Inoki
+description=Systemless install of AIPhoneAssistant as a system_ext priv-app, plus the SELinux rules it needs for screen capture and input injection. Requires a ROM signed with the AOSP test platform key (self-built LineageOS).

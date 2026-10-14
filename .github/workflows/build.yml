@@ -1,0 +1,77 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+jobs:
+  module:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # only used to publish a release on v* tags
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: AgentVis-OS/aiphone_assistant
+          path: aiphone_assistant
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install build-tools
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;35.0.0" >/dev/null
+
+      - name: Cache pinned inputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache
+            aiphone_assistant/.cache
+          key: inputs-${{ hashFiles('scripts/build-module.sh') }}
+
+      - name: Lint shell
+        run: |
+          sh -n module/customize.sh
+          shellcheck scripts/*.sh
+
+      - name: Build module
+        run: scripts/build-module.sh aiphone_assistant
+
+      - name: Test module zip
+        run: |
+          zip=$(ls dist/kamen-aiphone-*.zip)
+          list=$(unzip -Z1 "$zip")
+          for f in module.prop customize.sh sepolicy.rule \
+                   META-INF/com/google/android/update-binary \
+                   META-INF/com/google/android/updater-script \
+                   system/system_ext/priv-app/AIPhoneAssistant/AIPhoneAssistant.apk \
+                   system/system_ext/etc/permissions/privapp-permissions-aiphoneassistant.xml; do
+            grep -qx "$f" <<<"$list" || { echo "missing in zip: $f"; exit 1; }
+          done
+          grep -qx '#MAGISK' <(unzip -p "$zip" META-INF/com/google/android/updater-script)
+          unzip -p "$zip" module.prop | grep -q '^id=kamen_aiphone$'
+          # APK must carry the AOSP test platform cert (what test-keys ROMs use)
+          mkdir -p /tmp/apk && unzip -o -q -j "$zip" '*.apk' -d /tmp/apk
+          bt=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$bt/apksigner" verify --print-certs /tmp/apk/AIPhoneAssistant.apk \
+            | grep -q 'c8a2e9bccf597c2fb6dc66bee293fc13f2fc47ec77bc6b2b0d52c11f51192ab8'
+          # privapp allowlist is well-formed XML
+          unzip -p "$zip" system/system_ext/etc/permissions/privapp-permissions-aiphoneassistant.xml | xmllint --noout -
+          (cd dist && sha256sum kamen-aiphone-*.zip > SHA256SUMS)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kamen-aiphone
+          path: dist/
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" dist/*
