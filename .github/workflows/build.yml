@@ -62,7 +62,7 @@ jobs:
           "$bt/apksigner" verify --print-certs /tmp/apk/AIPhoneAssistant.apk \
             | grep -q 'c8a2e9bccf597c2fb6dc66bee293fc13f2fc47ec77bc6b2b0d52c11f51192ab8'
           # privapp allowlist is well-formed XML
-          unzip -p "$zip" system/system_ext/etc/permissions/privapp-permissions-aiphoneassistant.xml | xmllint --noout -
+          unzip -p "$zip" system/system_ext/etc/permissions/privapp-permissions-aiphoneassistant.xml | python3 -c "import sys, xml.dom.minidom as m; m.parse(sys.stdin)"
           (cd dist && sha256sum kamen-aiphone-*.zip > SHA256SUMS)
 
       - uses: actions/upload-artifact@v4
