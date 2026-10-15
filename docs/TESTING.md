@@ -35,8 +35,10 @@ a higher `VERSION_CODE` (`VERSION_CODE=100 scripts/build-module.sh ...`).
 | `INJECT_EVENTS`, `READ_FRAME_BUFFER`, `CAPTURE_VIDEO_OUTPUT` granted | pass |
 | Service starts, `ScreenCaptureService` + `InputInjectionService` init, no `avc: denied` | pass |
 | Remove module: ROM APK returns, version reverts, no resource errors | pass |
-| Real frame capture / input injection driven by a task (needs the mock LLM suite) | **not run** |
-| `sepolicy.rule` effect A/B on a running device | **not run** (only compile-checked) |
+| Real capture + input driven by tasks: mock-LLM suite from `~/aiphone-emu` (M1-M10: key, tap, swipe, scroll, text, long-press, idle, malformed/500/unknown replies), shipped module, SELinux enforcing | pass 10/10, 0 `system_app` denials |
+| `sepolicy.rule` loaded by Magisk at boot | pass (live policy differs; contents present) |
+| Negative control: `deny` lines revoke the rules (test-only zip) | fail as expected: 692 x `avc: denied { find } ... SurfaceFlingerAIDL ... system_app -> surfaceflinger_service`, capture thread aborts the app, mock LLM receives 0 frames |
+| Same `deny` lines followed by the real `sepolicy.rule` | pass 5/5 (M1-M5) |
 
 ## Bug found and fixed
 PackageManager's `/data/system/package_cache` kept serving the previous APK's
@@ -46,3 +48,21 @@ data after the overlay changed: after flashing, `versionCode` stayed at the bake
 `customize.sh` and `uninstall.sh` now clear the cache. Merely *disabling* the
 module (not removing it) still leaves a stale cache; remove it instead, or clear
 `/data/system/package_cache` and reboot.
+
+## SELinux rules: what the test does and does not show
+This emulator image's base policy **already contains** the allows in
+`sepolicy.rule` (the image was built with the WD40 policy), so the loaded policy is
+byte-identical with and without the module and a plain A/B proves nothing.
+The negative control above revokes them with `deny` at boot, which shows the
+app depends on them (at least `system_app -> surfaceflinger_service:service_manager find`)
+and that the module's rules restore it. It does not show that a ROM lacking them
+gets them from the module end to end; that needs a build without the WD40 policy.
+M1 can pass without any capture (its setup presses HOME); check "mock served N
+request(s)" as well as PASS.
+
+## Running the mock-LLM suite against current app versions
+Two changes were needed in a copy of the suite (the suite itself is untouched):
+- the app (HEAD) only runs a task when `task_state` is `pending`: add
+  `<string name="task_state">pending</string>` to the prefs the suite pushes;
+- the app requests `stream: true`: the mock must answer with SSE
+  (`data: {"choices":[{"delta":{"content":"<reply>"}}]}` then `data: [DONE]`).
