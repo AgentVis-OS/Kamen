@@ -31,4 +31,5 @@ release-keys ROMs are refused by the installer.
 - `scripts/build-module.sh` - builds the APK via the app repo, stages and zips the module
 - `scripts/check-sepolicy.sh` - compiles `sepolicy.rule` into a tree's policy conf (catches unknown types and neverallow hits)
 - `.github/workflows/build.yml` - CI: lint, build zip, test layout/signature, release on `v*` tags
+- `docs/TESTING.md` - emulator test procedure, results and known caveats
 - `docs/PLAN.md` - roadmap and open questions

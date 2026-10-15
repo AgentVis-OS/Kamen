@@ -18,7 +18,9 @@ esac
 [ -f "$MODPATH/system/system_ext/priv-app/AIPhoneAssistant/AIPhoneAssistant.apk" ] \
   || abort "! APK missing from module zip (build it with scripts/build-module.sh)"
 
-# Drop any /data update of the package so the systemless copy is the one used.
-ui_print "- If the app was previously adb-installed, it is replaced on next boot"
+# PackageManager caches parsed packages and keeps serving the old APK's data
+# after the overlay changes, so drop the cache; it is rebuilt on next boot.
+ui_print "- Clearing PackageManager cache so the new APK is picked up on next boot"
+rm -rf /data/system/package_cache
 set_perm_recursive "$MODPATH/system/system_ext" 0 0 0755 0644
 ui_print "- SELinux rules come from sepolicy.rule; check 'dmesg | grep avc' on denials"

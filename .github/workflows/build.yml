@@ -38,6 +38,7 @@ jobs:
       - name: Lint shell
         run: |
           sh -n module/customize.sh
+          sh -n module/uninstall.sh
           shellcheck scripts/*.sh
 
       - name: Build module
@@ -47,7 +48,7 @@ jobs:
         run: |
           zip=$(ls dist/kamen-aiphone-*.zip)
           list=$(unzip -Z1 "$zip")
-          for f in module.prop customize.sh sepolicy.rule \
+          for f in module.prop customize.sh uninstall.sh sepolicy.rule \
                    META-INF/com/google/android/update-binary \
                    META-INF/com/google/android/updater-script \
                    system/system_ext/priv-app/AIPhoneAssistant/AIPhoneAssistant.apk \

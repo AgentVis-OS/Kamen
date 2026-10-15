@@ -21,7 +21,7 @@ verification is static plus emulator.
 
 1. **M0 scaffold** - this commit: layout, build script, rules, installer checks.
 2. **M1 verification (no physical device)** - static part done: zip layout, APK
-   cert, and `scripts/check-sepolicy.sh` pass. Remaining: emulator run. Original scope: - static checks (zip layout,
+   cert, and `scripts/check-sepolicy.sh` pass. Emulator run done, see `docs/TESTING.md` (module works; found and fixed a PackageManager cache bug). Remaining there: a task-driven capture/input run. Original scope: - static checks (zip layout,
    `apksigner verify`, `magiskpolicy` load of `sepolicy.rule` against a built
    policy) and the `~/aiphone-emu` emulator with Magisk: package is a priv-app,
    permissions granted (`dumpsys package com.android.aiphoneassistant`), no

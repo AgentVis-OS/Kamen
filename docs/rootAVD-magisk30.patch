@@ -1,0 +1,45 @@
+--- a/rootAVD.sh	2023-10-19 20:36:42.000000000 +0200
++++ b/rootAVD.sh	2026-10-15 17:06:27.235654157 +0200
+@@ -1222,7 +1222,7 @@
+ 	for file in $(ls $BASEDIR/lib/*/*busybox*); do
+ 		chmod +x "$file"
+ 		bbversion=$($file | $file head -n 1)>/dev/null 2>&1
+-		if [[ $bbversion == *"BusyBox"*"Magisk"*"multi-call"* ]]; then
++		if [[ $bbversion == *"BusyBox"*"multi-call"* ]]; then
+ 			TestingBusyBoxVersion "$file"
+ 			RESULT="$?"
+ 			if [[ "$RESULT" == "0" ]]; then
+@@ -1688,16 +1688,12 @@
+ 
+ 	# Compress to save precious ramdisk space
+ 
+-	if $IS32BITONLY || ! $IS64BITONLY ; then
+-		$BASEDIR/magiskboot compress=xz magisk32 magisk32.xz
+-	fi
+-
+-	if $IS64BITONLY || ! $IS32BITONLY ; then
+-		$BASEDIR/magiskboot compress=xz magisk64 magisk64.xz
+-	fi
+-
+-	$IS64BITONLY && SKIP32="#" || SKIP32=""
+-	$IS64BIT && SKIP64="" || SKIP64="#"
++	# Magisk >= 28: single "magisk" binary + init-ld
++	$BASEDIR/magiskboot compress=xz magisk magisk.xz
++	$BASEDIR/magiskboot compress=xz init-ld init-ld.xz
++	PREINITDEVICE=$($BASEDIR/magisk --preinit-device 2>/dev/null)
++	echo "VENDORBOOT=false" >> config
++	[ -n "$PREINITDEVICE" ] && echo "PREINITDEVICE=$PREINITDEVICE" >> config
+ 
+ 	if $STUBAPK; then
+ 		echo "[!] stub.apk is present, compress and add it to ramdisk"
+@@ -1718,8 +1714,8 @@
+ 	echo "[!] patching the ramdisk with Magisk Init"
+ 	$BASEDIR/magiskboot cpio ramdisk.cpio \
+ 	"add 0750 init magiskinit" \
+-	"$SKIP32 add 0644 overlay.d/sbin/magisk32.xz magisk32.xz" \
+-	"$SKIP64 add 0644 overlay.d/sbin/magisk64.xz magisk64.xz" \
++	"add 0644 overlay.d/sbin/magisk.xz magisk.xz" \
++	"add 0644 overlay.d/sbin/init-ld.xz init-ld.xz" \
+ 	"$SKIPSTUB add 0644 overlay.d/sbin/stub.xz stub.xz" \
+ 	"patch" \
+ 	"backup ramdisk.cpio.orig" \
